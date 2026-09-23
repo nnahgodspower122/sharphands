@@ -1,0 +1,198 @@
+SharpHand.ng – Technical Documentation
+1. Overview
+SharpHand.ng is a mobile-first, web-based platform connecting users to nearby skilled workers. The platform focuses on simplicity:
+    • Users select a service → see nearby workers → get connected instantly
+    • No in-app payments in the MVP (later added)
+    • Workers may be monetized via subscriptions or featured listings in future phases
+Target Devices:
+    • Mobile (primary)
+    • Desktop (secondary, responsive design)
+Core Goal:
+    • Fast, reliable connections between users and local service providers
+
+2. Architecture
+2.1 High-Level Architecture
+[User Web/Mobile Browser]
+        |
+        v
+ [Frontend: Vue.js / React]
+        |
+        v
+ [Backend: Laravel (PHP)]
+        |
+   -----------------
+   |               |
+[Database]     [Map API]
+MySQL/Postgres Google Maps / Mapbox
+Components:
+    1. Frontend:
+        ◦ Vue.js (progressive framework) for responsive web UI
+        ◦ Mobile-friendly layout
+        ◦ Maps integration for worker location display
+    2. Backend:
+        ◦ Laravel framework (PHP)
+        ◦ REST API endpoints for all operations (users, services, workers)
+        ◦ Handles business logic, notifications, ratings, and lead connections
+    3. Database:
+        ◦ MySQL or PostgreSQL
+        ◦ Tables for Users, Workers, Services, Bookings, Ratings, Locations
+    4. Map & Location Services:
+        ◦ Google Maps API or Mapbox for worker geolocation and distance calculation
+
+3. Database Schema (Simplified)
+3.1 Users Table
+Column
+Type
+Description
+id
+int PK
+User ID
+name
+varchar
+Full name
+email
+varchar
+Email address
+phone
+varchar
+Phone number
+password
+varchar
+Hashed password
+created_at
+timestamp
+Record created
+updated_at
+timestamp
+Record updated
+3.2 Workers Table
+Column
+Type
+Description
+id
+int PK
+Worker ID
+name
+varchar
+Worker name
+phone
+varchar
+Phone number
+service_id
+int FK
+Service they provide
+latitude
+decimal
+Current latitude
+longitude
+decimal
+Current longitude
+status
+enum
+Available/Busy
+created_at
+timestamp
+Record created
+updated_at
+timestamp
+Record updated
+3.3 Services Table
+Column
+Type
+Description
+id
+int PK
+Service ID
+name
+varchar
+Service name (Plumber, Electrician, etc.)
+description
+text
+Optional description
+3.4 Bookings / Connections Table
+Column
+Type
+Description
+id
+int PK
+Booking ID
+user_id
+int FK
+Connected user
+worker_id
+int FK
+Worker assigned
+status
+enum
+Pending/Completed/Cancelled
+created_at
+timestamp
+Timestamp of connection
+updated_at
+timestamp
+Timestamp updated
+
+4. API Endpoints
+4.1 User APIs
+    • POST /api/register – Register new user
+    • POST /api/login – Authenticate user
+    • GET /api/services – List available services
+    • POST /api/book – Connect user to nearest available worker
+4.2 Worker APIs
+    • POST /api/worker/register – Worker signup
+    • GET /api/worker/availability – Check availability status
+    • POST /api/worker/update-location – Update worker location for live maps
+    • GET /api/bookings – View incoming connections
+4.3 Admin APIs (Optional Phase 2)
+    • GET /api/admin/workers – View all workers
+    • GET /api/admin/users – View all users
+    • GET /api/admin/bookings – Monitor bookings and activity
+
+5. Core Features (MVP)
+User Features
+    • Select service needed
+    • Map view of nearby workers
+    • Instant connection to worker
+    • Worker ratings and reviews
+Worker Features
+    • Self-registration and profile setup
+    • Update availability status
+    • Update live location (optional)
+    • Receive lead notifications
+Admin Features
+    • Dashboard to monitor users and workers
+    • Track connections made
+
+6. Technical Considerations
+    1. Maps & Distance Calculation
+        ◦ Use Haversine formula or Google Maps API to calculate nearby workers within radius
+    2. Notifications
+        ◦ Push notifications via Pusher or Firebase (optional MVP)
+        ◦ SMS notifications for connections in Nigeria (Twilio, Africastalking)
+    3. Security
+        ◦ Password hashing (bcrypt)
+        ◦ HTTPS for secure connections
+        ◦ Role-based access (user / worker / admin)
+    4. Scalability
+        ◦ MVP: Host on shared cloud (DigitalOcean, AWS Lightsail)
+        ◦ Later: Migrate to AWS or GCP for scaling
+
+7. Deployment & Hosting
+    • Domain: sharphand.ng
+    • Frontend: Vue.js SPA hosted on Netlify / Vercel
+    • Backend: Laravel API on DigitalOcean droplet / AWS EC2
+    • Database: MySQL or PostgreSQL (cloud hosted for scalability)
+    • Map API: Google Maps API key for geolocation and directions
+
+8. Future Enhancements
+    • In-app payments (Stripe / Flutterwave)
+    • Worker subscription plans and featured listings
+    • Ratings analytics & service history
+    • Multi-city expansion
+    • Mobile app (iOS/Android) via Ionic or React Native
+
+✅ Summary:
+SharpHand.ng is designed to be lightweight, fast, and hyper-local. The MVP focuses on connecting users to nearby workers instantly. Monetization and advanced features can be added later as the platform grows.
+
+If you want, I can also create a visual diagram showing the flow of the app — from user selecting a service → connecting to worker → completion — which is very useful for developers and presentations.
+Do you want me to do that next?
