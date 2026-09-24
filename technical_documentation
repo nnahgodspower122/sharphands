@@ -1,198 +1,179 @@
 SharpHand.ng – Technical Documentation
+
 1. Overview
-SharpHand.ng is a mobile-first, web-based platform connecting users to nearby skilled workers. The platform focuses on simplicity:
-    • Users select a service → see nearby workers → get connected instantly
+SharpHand.ng is a mobile-first, web-based platform connecting people to nearby skilled workers. The MVP is built for speed:
+    • Get Started opens a map → the user picks a service → nearby workers appear on the map → they connect with name and phone
+    • Customers do not create an account before finding or connecting to a worker
     • No in-app payments in the MVP (later added)
     • Workers may be monetized via subscriptions or featured listings in future phases
 Target Devices:
     • Mobile (primary)
     • Desktop (secondary, responsive design)
 Core Goal:
-    • Fast, reliable connections between users and local service providers
+    • Fast, reliable connections between people and local service providers, without a signup wall
+
+Customer flow (MVP):
+    1. Tap Get Started
+    2. See a map of their area and “What service do you need?”
+    3. Choose a service (Plumbing, Electrical, Cleaning, Carpentry)
+    4. See verified available workers close to them on the map
+    5. Connect with name + phone only — the worker’s number is shown after the connection is created
 
 2. Architecture
 2.1 High-Level Architecture
 [User Web/Mobile Browser]
         |
         v
- [Frontend: Vue.js / React]
+ [Frontend: Vue.js SPA]
         |
         v
  [Backend: Laravel (PHP)]
         |
    -----------------
    |               |
-[Database]     [Map API]
-MySQL/Postgres Google Maps / Mapbox
+[Database]     [Map / Geo]
+MySQL          Leaflet + Haversine
+
 Components:
     1. Frontend:
-        ◦ Vue.js (progressive framework) for responsive web UI
-        ◦ Mobile-friendly layout
-        ◦ Maps integration for worker location display
+        • Vue.js 3 + Vue Router SPA
+        • Mobile-friendly layout
+        • Map-first Get Started screen (no login required)
     2. Backend:
-        ◦ Laravel framework (PHP)
-        ◦ REST API endpoints for all operations (users, services, workers)
-        ◦ Handles business logic, notifications, ratings, and lead connections
+        • Laravel REST API
+        • Public find/connect endpoints for guests
+        • Authenticated endpoints for workers and admins
     3. Database:
-        ◦ MySQL or PostgreSQL
-        ◦ Tables for Users, Workers, Services, Bookings, Ratings, Locations
-    4. Map & Location Services:
-        ◦ Google Maps API or Mapbox for worker geolocation and distance calculation
+        • MySQL
+        • Tables for Users, Workers, Services, Bookings, Ratings, Contact messages
+    4. Map & Location:
+        • Browser geolocation (fallback: Lagos)
+        • Haversine distance for nearby workers
+        • Leaflet + OpenStreetMap for display
 
 3. Database Schema (Simplified)
 3.1 Users Table
-Column
-Type
-Description
-id
-int PK
-User ID
-name
-varchar
-Full name
-email
-varchar
-Email address
-phone
-varchar
-Phone number
-password
-varchar
-Hashed password
-created_at
-timestamp
-Record created
-updated_at
-timestamp
-Record updated
+Column          Type        Description
+id              int PK      User ID
+name            varchar     Full name
+email           varchar     Email address
+phone           varchar     Phone number
+role            enum        user / worker / admin
+password        varchar     Hashed password (workers, optional customers, admins)
+
+Customer accounts are optional. The main Get Started path does not create a user row.
+
 3.2 Workers Table
-Column
-Type
-Description
-id
-int PK
-Worker ID
-name
-varchar
-Worker name
-phone
-varchar
-Phone number
-service_id
-int FK
-Service they provide
-latitude
-decimal
-Current latitude
-longitude
-decimal
-Current longitude
-status
-enum
-Available/Busy
-created_at
-timestamp
-Record created
-updated_at
-timestamp
-Record updated
+Column          Type        Description
+id              int PK      Worker ID
+user_id         int FK      Linked worker account
+name            varchar     Worker name
+phone           varchar     Phone number (returned only after a connection)
+service_id      int FK      Service they provide
+latitude        decimal     Current latitude
+longitude       decimal     Current longitude
+status          enum        available / busy
+verified        boolean     Admin-approved
+
 3.3 Services Table
-Column
-Type
-Description
-id
-int PK
-Service ID
-name
-varchar
-Service name (Plumber, Electrician, etc.)
-description
-text
-Optional description
+Column          Type        Description
+id              int PK      Service ID
+name            varchar     Service name (Plumbing, Electrical, etc.)
+slug            varchar     URL/key
+description     text        Optional description
+base_amount     int         Display / booking amount in Naira
+
 3.4 Bookings / Connections Table
-Column
-Type
-Description
-id
-int PK
-Booking ID
-user_id
-int FK
-Connected user
-worker_id
-int FK
-Worker assigned
-status
-enum
-Pending/Completed/Cancelled
-created_at
-timestamp
-Timestamp of connection
-updated_at
-timestamp
-Timestamp updated
+Column          Type        Description
+id              int PK      Booking ID
+user_id         int FK      Optional — set only if the customer is logged in
+guest_name      varchar     Name collected at connect time (guests)
+guest_phone     varchar     Phone collected at connect time (guests)
+worker_id       int FK      Worker assigned
+service_id      int FK      Service requested
+status          enum        pending / in_progress / completed / cancelled
+amount          int         Quoted amount
+latitude        decimal     Customer location
+longitude       decimal     Customer location
 
 4. API Endpoints
-4.1 User APIs
-    • POST /api/register – Register new user
-    • POST /api/login – Authenticate user
+4.1 Public find and connect (no auth)
     • GET /api/services – List available services
-    • POST /api/book – Connect user to nearest available worker
-4.2 Worker APIs
+    • GET /api/services/nearby?lat=&lng= – Services plus nearby available-worker counts (for Get Started tiles)
+    • GET /api/workers/nearby?service_id=&lat=&lng= – Nearby verified, available workers (phone hidden)
+    • POST /api/book – Connect with name + phone (guest) or an auth token (optional account)
+        Body: name, phone, service_id, latitude, longitude, optional worker_id
+        Response includes the worker phone only after the booking is created
+    • POST /api/contact – Contact form
     • POST /api/worker/register – Worker signup
-    • GET /api/worker/availability – Check availability status
-    • POST /api/worker/update-location – Update worker location for live maps
-    • GET /api/bookings – View incoming connections
-4.3 Admin APIs (Optional Phase 2)
-    • GET /api/admin/workers – View all workers
-    • GET /api/admin/users – View all users
-    • GET /api/admin/bookings – Monitor bookings and activity
+
+4.2 Optional customer / session APIs
+    • POST /api/register – Optional customer account (not on the Get Started path)
+    • POST /api/login – Authenticate user / worker / admin
+    • GET /api/me – Current authenticated profile
+    • GET /api/bookings – Authenticated user’s or worker’s connections
+    • POST /api/bookings/{id}/rate – Rate a completed job
+
+4.3 Worker APIs (auth)
+    • GET|POST /api/worker/availability – Read or update availability
+    • POST /api/worker/update-location – Update live location
+    • GET /api/worker/dashboard – Incoming connections
+    • PATCH /api/worker/bookings/{id} – Update booking status
+
+4.4 Admin APIs (auth + admin role)
+    • GET /api/admin/dashboard
+    • GET /api/admin/users
+    • GET /api/admin/workers
+    • GET /api/admin/bookings
+    • POST /api/admin/workers/{id}/approve
+    • POST /api/admin/workers/{id}/reject
 
 5. Core Features (MVP)
 User Features
-    • Select service needed
-    • Map view of nearby workers
-    • Instant connection to worker
-    • Worker ratings and reviews
+    • Open Get Started and see a map immediately (no signup)
+    • Choose a service and see nearby workers as map pins
+    • Connect instantly with name and phone
+    • See the worker’s phone only after connecting
 Worker Features
     • Self-registration and profile setup
+    • Admin verification before appearing on the public map
     • Update availability status
-    • Update live location (optional)
-    • Receive lead notifications
+    • Update live location
+    • Receive incoming guest or user connections
 Admin Features
-    • Dashboard to monitor users and workers
-    • Track connections made
+    • Dashboard to monitor users, workers, and bookings
+    • Verify workers
+    • Track connections made (including guest name/phone)
 
 6. Technical Considerations
-    1. Maps & Distance Calculation
-        ◦ Use Haversine formula or Google Maps API to calculate nearby workers within radius
-    2. Notifications
-        ◦ Push notifications via Pusher or Firebase (optional MVP)
-        ◦ SMS notifications for connections in Nigeria (Twilio, Africastalking)
+    1. Maps and Distance
+        • Haversine formula to rank workers within a radius (default 20 km)
+        • Leaflet for the web map
+    2. Privacy
+        • Worker phone numbers are not listed on the public nearby API
+        • Phone is returned only on a successful POST /api/book
     3. Security
-        ◦ Password hashing (bcrypt)
-        ◦ HTTPS for secure connections
-        ◦ Role-based access (user / worker / admin)
+        • Password hashing (bcrypt) for worker and admin accounts
+        • HTTPS for secure connections
+        • Role-based access (optional user / worker / admin)
     4. Scalability
-        ◦ MVP: Host on shared cloud (DigitalOcean, AWS Lightsail)
-        ◦ Later: Migrate to AWS or GCP for scaling
+        • MVP: Host on shared cloud (DigitalOcean, AWS Lightsail)
+        • Later: Migrate to AWS or GCP for scaling
 
-7. Deployment & Hosting
+7. Deployment and Hosting
     • Domain: sharphand.ng
-    • Frontend: Vue.js SPA hosted on Netlify / Vercel
-    • Backend: Laravel API on DigitalOcean droplet / AWS EC2
-    • Database: MySQL or PostgreSQL (cloud hosted for scalability)
-    • Map API: Google Maps API key for geolocation and directions
+    • Frontend: Vue.js SPA (Laravel + Vite)
+    • Backend: Laravel API
+    • Database: MySQL
+    • Maps: Leaflet / OpenStreetMap (Google Maps optional later)
 
 8. Future Enhancements
+    • Optional customer accounts and saved booking history
     • In-app payments (Stripe / Flutterwave)
     • Worker subscription plans and featured listings
-    • Ratings analytics & service history
+    • Ratings analytics and service history
     • Multi-city expansion
-    • Mobile app (iOS/Android) via Ionic or React Native
+    • Native mobile app (iOS/Android)
 
-✅ Summary:
-SharpHand.ng is designed to be lightweight, fast, and hyper-local. The MVP focuses on connecting users to nearby workers instantly. Monetization and advanced features can be added later as the platform grows.
-
-If you want, I can also create a visual diagram showing the flow of the app — from user selecting a service → connecting to worker → completion — which is very useful for developers and presentations.
-Do you want me to do that next?
+Summary:
+SharpHand.ng is lightweight and hyper-local. The web MVP lets anyone tap Get Started, pick a service on a map, see nearby workers, and connect with only a name and phone number. Worker and admin accounts remain authenticated. Monetization and customer accounts can be added later.

@@ -4,8 +4,83 @@
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
+@source '../**/*.vue';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
+    --color-brand: #0b8f63;
+    --color-brand-dark: #086c4b;
+    --color-brand-soft: #e4f4ed;
+    --color-ink: #111827;
+    --color-muted: #6b7280;
+    --color-line: #eef2f6;
+    --shadow-card: 0 16px 40px rgba(15, 23, 42, 0.06);
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        color: var(--color-ink);
+        background: #fff;
+    }
+
+    a,
+    button,
+    [role="button"],
+    summary {
+        cursor: pointer;
+    }
+
+    button:disabled,
+    a[aria-disabled="true"] {
+        cursor: not-allowed;
+    }
+}
+
+@layer components {
+    .container-page {
+        @apply mx-auto w-full max-w-6xl px-5;
+    }
+
+    .btn,
+    .btn-primary,
+    .btn-dark,
+    .btn-outline {
+        @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition;
+    }
+
+    .btn-primary {
+        @apply bg-brand text-white hover:bg-brand-dark;
+    }
+
+    .btn-dark {
+        @apply bg-ink text-white hover:bg-black;
+    }
+
+    .btn-outline {
+        @apply border border-slate-200 bg-white text-ink hover:border-slate-300;
+    }
+
+    .card {
+        @apply rounded-[24px] border border-line bg-white shadow-[0_16px_40px_rgba(15,23,42,0.06)];
+    }
+
+    .field {
+        @apply w-full rounded-full border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand;
+    }
+
+    .field-area {
+        @apply w-full min-h-32 rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand;
+    }
+
+    .nav-link {
+        @apply cursor-pointer text-sm font-bold text-ink transition hover:text-brand;
+    }
+
+    .nav-link-active {
+        @apply text-brand;
+    }
 }
