@@ -17,7 +17,7 @@ const sending = ref(false);
 const details = [
     ['Email Us', 'support@sharphand.ng', 'Expect a response within 24 hours'],
     ['Call Us', '+234 (0) 800 123 4567', 'Mon – Fri, 9am – 6pm WAT'],
-    ['Main Office', '12 Tech Hub Avenue', 'Lekki Phase 1, Lagos, Nigeria'],
+    ['Main Office', '12 Tech Hub Avenue', 'GRA, Port Harcourt, Nigeria'],
     ['Business Hours', 'Open 24/7 for bookings', 'Support: Mon–Sat, 8am–8pm'],
 ];
 
